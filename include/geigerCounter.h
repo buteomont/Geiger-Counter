@@ -22,11 +22,12 @@
 #define MQTT_TOPIC_RSSI "rssi"
 #define MQTT_TOPIC_STATUS "status"
 #define MQTT_TOPIC_CLICKS_PER_SECOND "cps"
+#define MQTT_TOPIC_TOTAL_CLICKS "total"
 #define DEFAULT_MQTT_RUN_MESSAGE "started"
 #define DEFAULT_MQTT_TIMEOUT_MESSAGE "timeout"
 #define DEFAULT_MQTT_LWT_MESSAGE "stopped"
 #define MQTT_TOPIC_COMMAND_REQUEST "command"
-#define DETECT_PULSE_LENGTH_MS 50
+#define DETECT_PULSE_LENGTH_MS 150
 
 //prototypes
 void incomingMqttHandler(char* reqTopic, byte* payload, unsigned int length);

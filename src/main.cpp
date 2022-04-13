@@ -191,9 +191,16 @@ boolean sendMessage(char* topic, char* value)
     {
     char topicBuf[MQTT_MAX_TOPIC_SIZE+MQTT_MAX_MESSAGE_SIZE];
     char reading[18];
-//    boolean success=false; //only for the incoming topic and value
 
-    //publish the radio strength reading while we're at it
+    //publish the total clicks since reset
+    strcpy(topicBuf,settings.mqttTopicRoot);
+    strcat(topicBuf,MQTT_TOPIC_TOTAL_CLICKS);
+    sprintf(reading,"%d",totalEvents); 
+    success=publish(topicBuf,reading,false); //no retain
+    if (!success)
+      Serial.println("************ Failed publishing total clicks.");
+
+    //publish the radio strength reading too
     strcpy(topicBuf,settings.mqttTopicRoot);
     strcat(topicBuf,MQTT_TOPIC_RSSI);
     sprintf(reading,"%d",WiFi.RSSI()); 
@@ -345,7 +352,7 @@ void loop()
       char mqttMessage[MQTT_MAX_MESSAGE_SIZE];
       char* counter=itoa(eventCounter,mqttMessage,10);
       eventCounter=0;
-      boolean messageSent=sendMessage(MQTT_TOPIC_CLICKS_PER_SECOND, counter);
+      sendMessage(MQTT_TOPIC_CLICKS_PER_SECOND, counter);
       }
     }
 
