@@ -56,8 +56,21 @@ boolean timeoutMessageSent=false;
 
 volatile unsigned int eventCounter=0; //incremented for each particle detected
 volatile boolean detected=false; //true when detected, false after DETECT_PULSE_LENGTH_MS
+volatile boolean newClick=false; //used to give one speaker click per detection
 volatile unsigned long detectTime=millis(); 
 volatile unsigned int totalEvents=0;
+
+//make a click sound in the clicker
+void click()
+  {
+  for (int i=0;i<3;i++)
+    {
+    digitalWrite(CLICKER_PORT,LED_ON); 
+    delayMicroseconds(1000);
+    digitalWrite(CLICKER_PORT,LED_OFF); 
+    delayMicroseconds(1000);
+    }
+  }
 
 //Interrupt Service Routine
 IRAM_ATTR void handleInterrupt() 
@@ -66,6 +79,7 @@ IRAM_ATTR void handleInterrupt()
   totalEvents++;
   detected=true;
   detectTime=millis();
+  newClick=true;
   }
 
 void printStackSize(char id)
@@ -280,6 +294,8 @@ void setup()
   digitalWrite(LED_BUILTIN,LED_OFF);
   pinMode(DETECTED_LED_PORT,OUTPUT); // The port for the indicator LED
   digitalWrite(DETECTED_LED_PORT,LED_OFF); //turn off until we detect something
+  pinMode(CLICKER_PORT,OUTPUT); // The port for the click sounder
+  digitalWrite(CLICKER_PORT,LED_OFF); //turn off until we detect something
 
   Serial.begin(115200);
   Serial.setTimeout(10000);
@@ -325,8 +341,14 @@ void setup()
     }
   }
 
+
 void loop()
   {
+  if (newClick) //make a click sound for each particle detected
+    {
+    newClick=false;
+    click();
+    }
   checkForCommand(); // Check for input in case something needs to be changed to work
   if (!settingsAreValid)
     return;
@@ -336,30 +358,26 @@ void loop()
 
   if (millis()%1000==0) //every second
     {
-    if (eventCounter>0)
+    if (settings.debug)
       {
-      if (settings.debug)
-        {
-        Serial.print("eventCounter=");
-        Serial.println(eventCounter);
-        Serial.print("totalEvents=");
-        Serial.println(totalEvents);
-        Serial.print("detectTime=");
-        Serial.println(detectTime);
-        }
-
-      connectToWiFi(); //make sure we're connected to the broker
-      char mqttMessage[MQTT_MAX_MESSAGE_SIZE];
-      char* counter=itoa(eventCounter,mqttMessage,10);
-      eventCounter=0;
-      sendMessage(MQTT_TOPIC_CLICKS_PER_SECOND, counter);
+      Serial.print("eventCounter=");
+      Serial.println(eventCounter);
+      Serial.print("totalEvents=");
+      Serial.println(totalEvents);
+      Serial.print("detectTime=");
+      Serial.println(detectTime);
       }
+
+    connectToWiFi(); //make sure we're connected to the broker
+    char mqttMessage[MQTT_MAX_MESSAGE_SIZE];
+    char* counter=itoa(eventCounter,mqttMessage,10);
+    eventCounter=0;
+    sendMessage(MQTT_TOPIC_CLICKS_PER_SECOND, counter);
     }
 
   if (detected)
     {
-    digitalWrite(DETECTED_LED_PORT,LED_ON);
-
+    digitalWrite(DETECTED_LED_PORT,LED_ON); //turn on detected LED
     if (millis()>=detectTime+DETECT_PULSE_LENGTH_MS) //extinguish the detect LED
       {
       detected=false;
